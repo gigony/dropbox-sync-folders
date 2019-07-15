@@ -1,5 +1,5 @@
 {
-  "name": "dropbox-sync-folders",
+  "name": "@gigony/dropbox-sync-folders",
   "version": "0.1.2",
   "description": "Library to sync folders from Dropbox",
   "main": "lib/index.js",
@@ -18,6 +18,9 @@
     "version": "npm run format && git add -A src",
     "postversion": "git push && git push --tags"
   },
+  "jest": {
+    "verbose": true
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/gigony/dropbox-sync-folders.git"
@@ -33,15 +36,24 @@
   },
   "homepage": "https://github.com/gigony/dropbox-sync-folders#readme",
   "dependencies": {
-    "dropbox": "^4.0.28"
+    "dropbox": "^4.0.28",
+    "fast-glob": "^3.0.4",
+    "fs-extra": "^8.1.0",
+    "node-fetch": "^2.6.0"
   },
   "devDependencies": {
+    "@types/fs-extra": "^8.0.0",
     "@types/jest": "^24.0.15",
+    "@types/node": "^12.6.2",
+    "@types/node-fetch": "^2.3.7",
     "jest": "^24.8.0",
     "prettier": "^1.18.2",
     "ts-jest": "^24.0.2",
     "tslint": "^5.18.0",
     "tslint-config-prettier": "^1.18.0",
     "typescript": "^3.5.3"
+  },
+  "directories": {
+    "lib": "lib"
   }
 }
