@@ -9,7 +9,7 @@ import { DropboxContentHasher } from './dropbox-content-hasher';
 interface IMappingItem {
   src: string;
   dst: string;
-  cursor?: DropboxTypes.files.ListFolderCursor;
+  cursor?: string; // DropboxTypes.files.ListFolderCursor
 }
 
 interface IAccountSyncConfiguration {
