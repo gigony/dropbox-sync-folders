@@ -1,21 +1,38 @@
+import { config as envconfig } from 'dotenv-flow'
 import { DropboxSyncFolder } from '../index';
-import { PassThrough } from 'stream';
+envconfig();
 
-jest.setTimeout(600000);
-
-// function difference(setA: Set<string>, setB: Set<string>) {
-//   const diff = new Set(setA);
-//   for (const elem of setB) {
-//     diff.delete(elem);
-//   }
-//   return diff;
-// }
+jest.setTimeout(60000);
 
 test('test', async () => {
-  console.log('okay');
-});
+  const config = {
+    accounts: [
+      {
+        accessToken: (process.env.DROPBOX_ACCESSTOKEN_PERSON as string),
+        mappings: [
+          {
+            dst: 'dropbox',
+            src: '',
+          },
+        ],
+        name: 'PersonalDropbox',
+      },
+      {
+        accessToken: (process.env.DROPBOX_ACCESSTOKEN_NVIDIA as string),
+        mappings: [
+          {
+            dst: 'dropbox/nvidia/plan',
+            src: '/Work/Plan',
+          },
+        ],
+        name: 'NvidiaDropbox',
+      },
+    ],
+    verbose: true,
+    waitInterval: 30,
+  };
 
-// import { Greeter } from '../index';
-// test('My Greeter', () => {
-//   expect(Greeter('Gigon')).toBe('Hello Gigon');
-// });
+  const dropboxSync = new DropboxSyncFolder(config);
+  await dropboxSync.downloadFiles();
+  // await DropboxSyncFolder.sync(config);
+});

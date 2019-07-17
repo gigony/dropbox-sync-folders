@@ -10,14 +10,12 @@ interface IMappingItem {
   src: string;
   dst: string;
   cursor?: DropboxTypes.files.ListFolderCursor;
-  updated?: boolean;
 }
 
 interface IAccountSyncConfiguration {
   name: string;
   accessToken: string;
   mappings: IMappingItem[];
-  dbx?: Dropbox;
 }
 
 interface IAccountSyncConfigurationMap {
@@ -27,6 +25,10 @@ interface IDropboxSyncConfiguration {
   waitInterval?: number;
   verbose?: boolean;
   accounts: IAccountSyncConfiguration[];
+}
+
+interface IDropboxClientMap {
+  [index: string]: Dropbox;
 }
 
 interface ICancelToken {
@@ -42,14 +44,6 @@ async function sleep(timeout: number) {
   return new Promise<undefined>(resolve => setTimeout(resolve, timeout * 1000));
 }
 
-// function difference(setA: Set<string>, setB: Set<string>) {
-//   const diff = new Set(setA);
-//   for (const elem of setB) {
-//     diff.delete(elem);
-//   }
-//   return diff;
-// }
-
 class DropboxSyncFolder {
   public static async sync(config: IDropboxSyncConfiguration, cancelToken: ICancelToken = { cancel: false }) {
     const dropboxSync = new DropboxSyncFolder(config);
@@ -57,27 +51,6 @@ class DropboxSyncFolder {
     while (!cancelToken.cancel) {
       try {
         await dropboxSync.downloadFiles('*');
-        // const resultSet = await dropboxSync.downloadFiles('*');
-        // const fileSet = new Set(dropboxSync.getFileList());
-        // const fileDeleteSet = difference(fileSet, resultSet.fileSet);
-        // for (const filePath of fileDeleteSet) {
-        //   unlinkSync(filePath);
-        // }
-
-        // const folderSet = new Set(dropboxSync.getFileList('*', true));
-        // console.log('folderSet:', folderSet, 'resultSet.folderSet:', resultSet.folderSet);
-        // const folderDeleteSet = difference(folderSet, resultSet.folderSet);
-        // for (const filePath of fileDeleteSet) {
-        //   console.log('Remove file', filePath);
-        //   unlinkSync(filePath);
-        // }
-        // for (const folderPath of folderDeleteSet) {
-        //   const files: string[] = readdirSync(folderPath);
-        //   if (files.length === 0) {
-        //     console.log('Remove folder', folderPath);
-        //     removeSync(folderPath);
-        //   }
-        // }
         const token = { cancel: cancelToken.cancel };
         await dropboxSync.waitChanges('*', token);
       } catch (err) {
@@ -87,13 +60,16 @@ class DropboxSyncFolder {
   }
 
   private config: IAccountSyncConfigurationMap;
+  private dbx: IDropboxClientMap;
   private waitInterval: number;
   private verbose: boolean;
 
   constructor(config: IDropboxSyncConfiguration) {
     this.config = {};
+    this.dbx = {};
     config.accounts.forEach(syncConfig => {
-      syncConfig.dbx = new Dropbox({
+      const accountName = syncConfig.name;
+      this.dbx[accountName] = new Dropbox({
         accessToken: syncConfig.accessToken,
         fetch,
       });
@@ -150,7 +126,7 @@ class DropboxSyncFolder {
     }
 
     const config = this.config[account];
-    const dbx = config.dbx as Dropbox;
+    const dbx = this.dbx[account] as Dropbox;
 
     while (true) {
       try {
@@ -212,7 +188,7 @@ class DropboxSyncFolder {
     }
 
     const config = this.config[account];
-    const dbx = config.dbx as Dropbox;
+    const dbx = this.dbx[account] as Dropbox;
 
     const waiters = config.mappings.map(async (mappingItem: IMappingItem) => {
       let hasMore = true;
@@ -237,7 +213,6 @@ class DropboxSyncFolder {
 
           this.log('Received', response.entries.length, 'entries from', config.name);
           const writerPromisesList = response.entries
-            // .filter(item => item['.tag'] === 'file')
             .map(async item => {
               const filePath = join(
                 mappingItem.dst,
@@ -245,7 +220,6 @@ class DropboxSyncFolder {
               );
 
               if (item['.tag'] === 'file') {
-                //   mkdirSync(dirname(filePath), { recursive: true });
                 ensureDirSync(dirname(filePath));
 
                 result.fileSet.add(filePath);
@@ -275,8 +249,10 @@ class DropboxSyncFolder {
                   });
                 });
               } else if (item['.tag'] === 'folder') {
-                this.log('Create', filePath);
-                ensureDirSync(filePath);
+                if (!existsSync(filePath)) {
+                  this.log('Create', filePath);
+                  ensureDirSync(filePath);
+                }
                 result.folderSet.add(filePath);
               } else if (item['.tag'] === 'deleted') {
                 if (existsSync(filePath)) {
@@ -291,23 +267,11 @@ class DropboxSyncFolder {
               }
             });
           writerPromises.push(...writerPromisesList);
-
-          // response.entries
-          //   .filter(item => item['.tag'] === 'folder')
-          //   .map(item => {
-          //     const filePath = join(
-          //       mappingItem.dst,
-          //       (item.path_display as string).substring(mappingItem.src.length + 1),
-          //     );
-          //     ensureDirSync(filePath);
-          //     result.folderSet.add(filePath);
-          //   });
         }
       } catch (err) {
         console.error(err);
       }
       await Promise.all(writerPromises);
-      mappingItem.updated = true;
     });
 
     await Promise.all(waiters);
