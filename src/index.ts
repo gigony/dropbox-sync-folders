@@ -315,7 +315,7 @@ class DropboxSyncFolder {
     return result;
   }
 
-  private log(...messages:any[]) {
+  private log(...messages: any[]) {
     if (this.verbose) {
       console.log(...messages);
     }

@@ -12,7 +12,7 @@ jest.setTimeout(600000);
 // }
 
 test('test', async () => {
-  console.log("okay");
+  console.log('okay');
 });
 
 // import { Greeter } from '../index';
