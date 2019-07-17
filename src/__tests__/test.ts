@@ -1,4 +1,4 @@
-import { config as envconfig } from 'dotenv-flow'
+import { config as envconfig } from 'dotenv-flow';
 import { DropboxSyncFolder } from '../index';
 envconfig();
 
@@ -8,7 +8,7 @@ test('test', async () => {
   const config = {
     accounts: [
       {
-        accessToken: (process.env.DROPBOX_ACCESSTOKEN_PERSON as string),
+        accessToken: process.env.DROPBOX_ACCESSTOKEN_PERSON as string,
         mappings: [
           {
             dst: 'dropbox',
@@ -18,7 +18,7 @@ test('test', async () => {
         name: 'PersonalDropbox',
       },
       {
-        accessToken: (process.env.DROPBOX_ACCESSTOKEN_NVIDIA as string),
+        accessToken: process.env.DROPBOX_ACCESSTOKEN_NVIDIA as string,
         mappings: [
           {
             dst: 'dropbox/nvidia/plan',

@@ -212,60 +212,56 @@ class DropboxSyncFolder {
           hasMore = response.has_more;
 
           this.log('Received', response.entries.length, 'entries from', config.name);
-          const writerPromisesList = response.entries
-            .map(async item => {
-              const filePath = join(
-                mappingItem.dst,
-                (item.path_display as string).substring(mappingItem.src.length + 1),
-              );
+          const writerPromisesList = response.entries.map(async item => {
+            const filePath = join(mappingItem.dst, (item.path_display as string).substring(mappingItem.src.length + 1));
 
-              if (item['.tag'] === 'file') {
-                ensureDirSync(dirname(filePath));
+            if (item['.tag'] === 'file') {
+              ensureDirSync(dirname(filePath));
 
-                result.fileSet.add(filePath);
+              result.fileSet.add(filePath);
 
-                const remoteContentHash = (item as DropboxTypes.files.FileMetadataReference).content_hash;
-                const localContentHash = await this.getContentHash(filePath);
-                if (remoteContentHash === localContentHash) {
-                  this.log(`Skip downloading ${filePath}`);
-                  return;
-                }
+              const remoteContentHash = (item as DropboxTypes.files.FileMetadataReference).content_hash;
+              const localContentHash = await this.getContentHash(filePath);
+              if (remoteContentHash === localContentHash) {
+                this.log(`Skip downloading ${filePath}`);
+                return;
+              }
 
-                const tempLink = await dbx.filesGetTemporaryLink({ path: item.path_display as string });
-                const res = await fetch(tempLink.link);
-                const fileStream = createWriteStream(filePath);
-                await new Promise((resolve, reject) => {
-                  res.body.pipe(fileStream);
-                  res.body.on('error', (err: any) => {
-                    reject(err);
-                  });
-                  fileStream.on('finish', () => {
-                    if (localContentHash === '') {
-                      this.log(`Download ${filePath}`);
-                    } else {
-                      this.log(`Overwrite ${filePath}`);
-                    }
-                    resolve();
-                  });
+              const tempLink = await dbx.filesGetTemporaryLink({ path: item.path_display as string });
+              const res = await fetch(tempLink.link);
+              const fileStream = createWriteStream(filePath);
+              await new Promise((resolve, reject) => {
+                res.body.pipe(fileStream);
+                res.body.on('error', (err: any) => {
+                  reject(err);
                 });
-              } else if (item['.tag'] === 'folder') {
-                if (!existsSync(filePath)) {
-                  this.log('Create', filePath);
-                  ensureDirSync(filePath);
-                }
-                result.folderSet.add(filePath);
-              } else if (item['.tag'] === 'deleted') {
-                if (existsSync(filePath)) {
-                  this.log('Delete', item.path_display);
-                  const fileStat = lstatSync(filePath);
-                  if (fileStat.isDirectory()) {
-                    removeSync(filePath);
+                fileStream.on('finish', () => {
+                  if (localContentHash === '') {
+                    this.log(`Download ${filePath}`);
                   } else {
-                    unlinkSync(filePath);
+                    this.log(`Overwrite ${filePath}`);
                   }
+                  resolve();
+                });
+              });
+            } else if (item['.tag'] === 'folder') {
+              if (!existsSync(filePath)) {
+                this.log('Create', filePath);
+                ensureDirSync(filePath);
+              }
+              result.folderSet.add(filePath);
+            } else if (item['.tag'] === 'deleted') {
+              if (existsSync(filePath)) {
+                this.log('Delete', item.path_display);
+                const fileStat = lstatSync(filePath);
+                if (fileStat.isDirectory()) {
+                  removeSync(filePath);
+                } else {
+                  unlinkSync(filePath);
                 }
               }
-            });
+            }
+          });
           writerPromises.push(...writerPromisesList);
         }
       } catch (err) {
