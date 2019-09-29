@@ -31,7 +31,7 @@ interface IDropboxClientMap {
   [index: string]: Dropbox;
 }
 
-interface ICancelToken {
+export interface ICancelToken {
   cancel: boolean;
 }
 
@@ -127,6 +127,30 @@ class DropboxSyncFolder {
 
     const config = this.config[account];
     const dbx = this.dbx[account] as Dropbox;
+
+    // Create cursor (if not exist) and set to the the latest position
+    const listWaiters = config.mappings.map(async (mappingItem: IMappingItem) => {
+      let hasMore = true;
+      try {
+        while (hasMore) {
+          let response;
+          if (!mappingItem.cursor) {
+            response = await dbx.filesListFolder({
+              include_deleted: true,
+              path: mappingItem.src,
+              recursive: true,
+            });
+          } else {
+            response = await dbx.filesListFolderContinue({ cursor: mappingItem.cursor });
+          }
+          mappingItem.cursor = response.cursor;
+          hasMore = response.has_more;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    })
+    await Promise.all(listWaiters)
 
     while (true) {
       try {
