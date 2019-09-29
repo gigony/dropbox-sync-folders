@@ -1,6 +1,6 @@
 {
   "name": "dropbox-sync-folders",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Library to sync folders from Dropbox",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
