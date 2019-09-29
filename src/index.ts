@@ -149,8 +149,8 @@ class DropboxSyncFolder {
       } catch (err) {
         console.error(err);
       }
-    })
-    await Promise.all(listWaiters)
+    });
+    await Promise.all(listWaiters);
 
     while (true) {
       try {
