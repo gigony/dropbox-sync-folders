@@ -38,7 +38,7 @@
   "dependencies": {
     "dropbox": "^4.0.28",
     "fast-glob": "^3.0.4",
-    "fs-extra": "^8.1.0",
+    "fs-extra": "^9.0.0",
     "node-fetch": "^2.6.0"
   },
   "devDependencies": {
